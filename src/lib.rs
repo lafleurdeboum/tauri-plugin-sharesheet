@@ -52,47 +52,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             let os_handle = api.register_android_plugin(PLUGIN_IDENTIFIER, "SharesheetPlugin")?;
             #[cfg(target_os = "ios")]
             let os_handle = api.register_ios_plugin(init_plugin_sharesheet)?;
-            let app_handle = app.clone();
-            #[cfg(target_os = "android")]
-            {
-                use tauri::ipc::{Channel, InvokeResponseBody};
-                // A JSON-formatted event sent by SharesheetPlugin.kt
-                #[derive(serde::Serialize, serde::Deserialize, Clone)]
-                struct ShareEvent {
-                    mime_type: String,
-                    data: String,
-                }
-
-                // A handler passed to SharesheetPlugin that will trigger on share events.
-                #[derive(serde::Serialize)]
-                #[serde(rename_all = "camelCase")]
-                struct ShareEventHandler {
-                    handler: Channel
-                }
-
-                let _ = os_handle.run_mobile_plugin::<()>(
-                    "setShareEventHandler",
-                    ShareEventHandler {
-                        handler: Channel::new(move |event| {
-                            let share_event: Option<ShareEvent> = match event {
-                                InvokeResponseBody::Json(payload) => {
-                                    serde_json::from_str::<ShareEvent>(&payload).ok()
-                                },
-                                InvokeResponseBody::Raw(_) => {
-                                    None
-                                }
-                            };
-                            use tauri::Emitter;
-                            let _ = app_handle.emit("/share", vec![share_event]);
-
-                            Ok(())
-                        })
-                    }
-                );
-            }
             app.manage(Sharesheet(os_handle));
 
             Ok(())
         })
         .build()
 }
+

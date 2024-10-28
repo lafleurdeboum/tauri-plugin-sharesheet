@@ -19,11 +19,6 @@ import app.tauri.plugin.Invoke
 import app.tauri.plugin.Plugin
 
 @InvokeArg
-class SetEventHandlerArgs {
-    lateinit var handler: Channel
-}
-
-@InvokeArg
 class ShareTextOptions {
     lateinit var text: String
     var mimeType: String = "text/plain"
@@ -33,17 +28,6 @@ class ShareTextOptions {
 
 @TauriPlugin
 class SharesheetPlugin(private val activity: Activity): Plugin(activity) {
-
-    private var channel: Channel? = null
-    // This command should not be added to the `build.rs` and exposed as it is only
-    // used internally from the rust backend.
-    @Command
-    fun setShareEventHandler(invoke: Invoke) {
-        val args = invoke.parseArgs(SetEventHandlerArgs::class.java)
-        this.channel = args.handler
-        invoke.resolve()
-    }
-
     /**
      * Open the Sharesheet to share some text
      */
@@ -74,8 +58,7 @@ class SharesheetPlugin(private val activity: Activity): Plugin(activity) {
                     val event = JSObject()
                     event.put("mime_type", intent.type)
                     event.put("data", intent.data.toString())
-                    this.channel?.send(event)
-                    //trigger("newIntent", event)
+                    trigger("newIntent", event)
                 } else if (intent.type?.startsWith("image/") == true) {
                     println("send image unimplemented")
                     //handleSendImage(intent)
@@ -89,3 +72,4 @@ class SharesheetPlugin(private val activity: Activity): Plugin(activity) {
         }
     }
 }
+
